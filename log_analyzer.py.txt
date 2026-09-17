@@ -1,0 +1,53 @@
+import re
+from collections import Counter
+import json
+
+# Configuration Thresholds
+LOG_FILE = "sample_access.log"
+FAILED_LOGIN_THRESHOLD = 3  # Flag IP if more than 3 failed attempts
+OUTPUT_REPORT = "security_report.json"
+
+def analyze_logs():
+    failed_attempts = Counter()
+    ip_pattern = r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    
+    print("[*] Scanning log file for suspicious activity...")
+    
+    try:
+        with open(LOG_FILE, "r") as file:
+            for line in file:
+                # Check for HTTP 401 (Unauthorized) status codes on login endpoints
+                if '401' in line and '/login' in line:
+                    match = re.search(ip_pattern, line)
+                    if match:
+                        ip_address = match.group(1)
+                        failed_attempts[ip_address] += 1
+    except FileNotFoundError:
+        print(f"[!] Error: '{LOG_FILE}' not found. Please create the log file first.")
+        return
+
+    # Identify flagged threats
+    flagged_ips = {ip: count for ip, count in failed_attempts.items() if count >= FAILED_LOGIN_THRESHOLD}
+    
+    # Generate JSON Incident Report
+    report = {
+        "status": "ALERT" if flagged_ips else "CLEAR",
+        "threshold_limit": FAILED_LOGIN_THRESHOLD,
+        "flagged_threats": []
+    }
+    
+    for ip, count in flagged_ips.items():
+        report["flagged_threats"].append({
+            "ip_address": ip,
+            "failed_attempts": count,
+            "risk_level": "HIGH - Potential Brute Force Attack"
+        })
+        print(f"[!] THREAT DETECTED: IP {ip} failed login {count} times!")
+
+    with open(OUTPUT_REPORT, "w") as out_file:
+        json.dump(report, out_file, indent=4)
+        
+    print(f"[*] Analysis complete. Report saved to '{OUTPUT_REPORT}'.")
+
+if __name__ == "__main__":
+    analyze_logs()

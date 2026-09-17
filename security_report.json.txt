@@ -1,0 +1,11 @@
+{
+    "status": "ALERT",
+    "threshold_limit": 3,
+    "flagged_threats": [
+        {
+            "ip_address": "192.168.1.100",
+            "failed_attempts": 5,
+            "risk_level": "HIGH - Potential Brute Force Attack"
+        }
+    ]
+}
