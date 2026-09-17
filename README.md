@@ -1,1 +1,0 @@
-# python-security-log-analyzer
